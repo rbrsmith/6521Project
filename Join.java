@@ -6,6 +6,7 @@ import java.util.StringTokenizer;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.ArrayWritable;
+import org.apache.hadoop.io.WritableComparable;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapred.FileInputFormat;
@@ -33,6 +34,50 @@ import org.apache.hadoop.io.Writable;
 
 public class Join {
 	
+	public static class myInt implements Writable, WritableComparable<myInt> {
+		private int key;
+		
+		public myInt() {
+			set(key);
+		}
+		
+		public myInt(int m) {
+			key = m;
+		}
+		
+		public void set(int m){
+			key = m;
+		}
+		
+		public int getKey() {
+			return key;
+		}
+		
+		@Override
+		public void write(DataOutput out) throws IOException {
+			out.writeInt(key);
+		}
+		@Override
+		public void readFields(DataInput in) throws IOException {
+			key = in.readInt();
+		}
+		
+		@Override
+		public String toString() {
+			return new Integer(key).toString();
+		}
+		
+		 @Override
+		 public int compareTo(myInt m) {
+			 if(key == m.getKey()) {
+				 return 0;
+			 } else {
+				 return 1;
+			 }
+		 }
+		
+		
+	}
 	
 	public static class TwovalueWritable implements Writable {
 	    private int type;
@@ -87,7 +132,7 @@ public class Join {
 	       Text s = new Text("S");
 	       if(tupleType.equals(s)) {
 	    	   valueType.set(0, b.get());
-	    	   output.collect(a , valueType);
+	    	   output.collect(a, valueType);
 	       } else {
 	    	   valueType.set(1, a.get());
 	    	   output.collect(b, valueType);
@@ -96,12 +141,13 @@ public class Join {
 	   }
 
 	 public static class Reduce extends MapReduceBase implements Reducer<IntWritable, TwovalueWritable, IntWritable, TwovalueWritable> {
-	     
+
+		 
 		 
 		 public void reduce(IntWritable key, Iterator<TwovalueWritable> values, OutputCollector<IntWritable, TwovalueWritable> output, Reporter reporter) throws IOException {
-
 			 ArrayList<Integer> sList = new ArrayList<Integer>();
 	    	 ArrayList<Integer> rList = new ArrayList<Integer>();
+			 
 	    	 int type;
 	    	 int val;
 	    	 while (values.hasNext()) {
@@ -116,15 +162,18 @@ public class Join {
 	        }
 	    	for(int sVal : sList){
     			for (int rVal : rList) {
-	    			TwovalueWritable fVal = new TwovalueWritable(key.get(), sVal);
-	    			output.collect(new IntWritable(rVal), fVal);
+    				System.out.println(rVal + " " + key + " " + sVal);	
+//    				TwovalueWritable fVal = new TwovalueWritable(key.get(), sVal);
+//	    			output.collect(new IntWritable(rVal), fVal);
+    				TwovalueWritable fVal = new TwovalueWritable(1, 2);
+    				output.collect(new IntWritable(0), fVal);
+
 	    		}
 	    	}
 
 	     }
-	     
-	     
-	   }
+	 }
+	    
 
 	   public static void main(String[] args) throws Exception {
 	     JobConf conf = new JobConf(Join.class);
@@ -138,7 +187,7 @@ public class Join {
 	     conf.setOutputValueClass(TwovalueWritable.class);
 
 	     conf.setMapperClass(Map.class);
-	     conf.setCombinerClass(Reduce.class);
+	  //   conf.setCombinerClass(Reduce.class);
 	     conf.setReducerClass(Reduce.class);
 
 	     conf.setInputFormat(TextInputFormat.class);
