@@ -6,6 +6,7 @@ import java.util.StringTokenizer;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.ArrayWritable;
+import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.WritableComparable;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
@@ -28,57 +29,19 @@ import java.io.IOException;
 import org.apache.hadoop.io.Writable;
 
 
-//import Join.Map;
-//import Join.Reduce;
-
-
+/**
+ * Assignment 1
+ * Reduce-side join
+ *
+ */
 public class Join {
 	
-	public static class myInt implements Writable, WritableComparable<myInt> {
-		private int key;
-		
-		public myInt() {
-			set(key);
-		}
-		
-		public myInt(int m) {
-			key = m;
-		}
-		
-		public void set(int m){
-			key = m;
-		}
-		
-		public int getKey() {
-			return key;
-		}
-		
-		@Override
-		public void write(DataOutput out) throws IOException {
-			out.writeInt(key);
-		}
-		@Override
-		public void readFields(DataInput in) throws IOException {
-			key = in.readInt();
-		}
-		
-		@Override
-		public String toString() {
-			return new Integer(key).toString();
-		}
-		
-		 @Override
-		 public int compareTo(myInt m) {
-			 if(key == m.getKey()) {
-				 return 0;
-			 } else {
-				 return 1;
-			 }
-		 }
-		
-		
-	}
 	
+	/**
+	 * Class to hold where the input came from (R or S)
+	 * And the value which was read 
+	 *
+	 */
 	public static class TwovalueWritable implements Writable {
 	    private int type;
 	    private int val;
@@ -115,7 +78,12 @@ public class Join {
 	    }
 	}
 	
-
+	
+	/**
+	 * Map each line to its key, in R the key is the second input
+	 * In S the key is the first input
+	 *
+	 */
 	 public static class Map extends MapReduceBase implements Mapper<LongWritable, Text, IntWritable, TwovalueWritable> {
 		 private Text tupleType = new Text();
 	     private IntWritable a = new IntWritable();
@@ -130,6 +98,7 @@ public class Join {
 	       a.set(Integer.parseInt(tuple[1]));
 	       b.set(Integer.parseInt(tuple[2]));
 	       Text s = new Text("S");
+	       // Set key and value depending on which tuple the input ccame from
 	       if(tupleType.equals(s)) {
 	    	   valueType.set(0, b.get());
 	    	   output.collect(a, valueType);
@@ -140,33 +109,37 @@ public class Join {
 	     }
 	   }
 
-	 public static class Reduce extends MapReduceBase implements Reducer<IntWritable, TwovalueWritable, IntWritable, TwovalueWritable> {
+	 
+	 /**
+	  *  All keys are unique and list of values are tuple containing value and where the value came from (R or S) 
+	  *
+	  */
+	 public static class Reduce extends MapReduceBase implements Reducer<IntWritable, TwovalueWritable, Text, NullWritable> {
 
-		 
-		 
-		 public void reduce(IntWritable key, Iterator<TwovalueWritable> values, OutputCollector<IntWritable, TwovalueWritable> output, Reporter reporter) throws IOException {
+		 public void reduce(IntWritable key, Iterator<TwovalueWritable> values, OutputCollector<Text, NullWritable> output, Reporter reporter) throws IOException {
+			 // Capture all R values in this key and S values
 			 ArrayList<Integer> sList = new ArrayList<Integer>();
 	    	 ArrayList<Integer> rList = new ArrayList<Integer>();
-			 
+			 Text joinStr = new Text();
 	    	 int type;
 	    	 int val;
 	    	 while (values.hasNext()) {
 	    		 TwovalueWritable value = values.next();    
 	    		 type = value.getType();
 	    		 val = value.getVal();
+	    		 // Add to appropriate list
 	    		 if(type == 1) {
 	    			 rList.add(value.getVal());
 	    		 } else {
 	    			 sList.add(value.getVal());
 	    		 }
 	        }
+	    	 // Gather results
 	    	for(int sVal : sList){
     			for (int rVal : rList) {
-    				System.out.println(rVal + " " + key + " " + sVal);	
-//    				TwovalueWritable fVal = new TwovalueWritable(key.get(), sVal);
-//	    			output.collect(new IntWritable(rVal), fVal);
+    				joinStr.set(rVal + " " + key + " " + sVal);
     				TwovalueWritable fVal = new TwovalueWritable(1, 2);
-    				output.collect(new IntWritable(0), fVal);
+    				output.collect(joinStr, NullWritable.get());
 
 	    		}
 	    	}
@@ -175,13 +148,14 @@ public class Join {
 	 }
 	    
 
-	   public static void main(String[] args) throws Exception {
+	 // Run the job
+	 public static void main(String[] args) throws Exception {
 	     JobConf conf = new JobConf(Join.class);
 	     conf.setJobName("join");
 
-	     
 	     conf.setSpeculativeExecution(false);
 	     conf.setBoolean("mapreduce.map.speculative", false);
+	     conf.setInt("mapred.tasktracker.reduce.tasks.maximum", 32);
 	     
 	     conf.setOutputKeyClass(IntWritable.class);
 	     conf.setOutputValueClass(TwovalueWritable.class);
