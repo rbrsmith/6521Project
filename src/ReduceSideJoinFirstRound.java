@@ -99,8 +99,6 @@ public class ReduceSideJoinFirstRound {
   public static class Map extends MapReduceBase 
     implements Mapper<LongWritable, Text, IntWritable, SourcedElement> {
     private Text sourceRelation = new Text();
-    private IntWritable x = new IntWritable();
-    private IntWritable y = new IntWritable();
     private SourcedElement sourcedElement = new SourcedElement();
 
     @Override
@@ -110,15 +108,18 @@ public class ReduceSideJoinFirstRound {
       String[] tuple = line.split("\t");
 
       sourceRelation.set(tuple[0]);
+      IntWritable x = new IntWritable();
+      IntWritable y = new IntWritable();
       x.set(Integer.parseInt(tuple[1]));
       y.set(Integer.parseInt(tuple[2]));
+      
 
       Text s = new Text(Relation.S.name());
       // Set key and value depending on which relation the input came from
-      if (sourceRelation.equals(s)) {
+      if (sourceRelation.equals(new Text("S"))) {
         sourcedElement.set(Relation.S, y.get());
         output.collect(x, sourcedElement);
-      } else {
+      } else if(sourceRelation.equals(new Text("R"))){
         sourcedElement.set(Relation.R, x.get());
         output.collect(y, sourcedElement);
       }
@@ -138,6 +139,7 @@ public class ReduceSideJoinFirstRound {
     @Override
     public void reduce(IntWritable key, Iterator<SourcedElement> values,
         OutputCollector<Text, NullWritable> output, Reporter reporter) throws IOException {
+    	
       // FIXME: Can't do this - these might very well not fit in memory.
       List<Integer> sList = new ArrayList<Integer>();
       List<Integer> rList = new ArrayList<Integer>();
@@ -155,7 +157,6 @@ public class ReduceSideJoinFirstRound {
           output.collect(joinStr, NullWritable.get());
         }
       }
-
     }
   }
   
