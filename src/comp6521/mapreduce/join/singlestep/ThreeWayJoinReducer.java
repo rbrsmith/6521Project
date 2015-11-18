@@ -1,8 +1,8 @@
 package comp6521.mapreduce.join.singlestep;
 
 import java.io.IOException;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.Text;
@@ -16,29 +16,39 @@ import javafx.util.Pair;
 public class ThreeWayJoinReducer extends Reducer<TaggedKey, TaggedElement, NullWritable, Text> {
 
 	@Override
-	public void reduce(TaggedKey key, Iterable<TaggedElement> values,
-			Context context) throws IOException, InterruptedException {
+	public void reduce(TaggedKey key, Iterable<TaggedElement> values, Context context)
+			throws IOException, InterruptedException {
 		Text result = new Text();
 
-		// Buffer relations R and S. 
-		// Generally speaking we would want to buffer the larger relations to
-		// minimize IO
-		Set<Pair<Integer, Integer>> rSet = new HashSet<>();
-		Set<Pair<Integer, Integer>> sSet = new HashSet<>();
-		
+		// Use maps with counts to handle duplicates
+		Map<Pair<Integer, Integer>, Integer> rCounts = new HashMap<>();
+		Map<Pair<Integer, Integer>, Integer> sCounts = new HashMap<>();
+
 		for (TaggedElement val : values) {
 			if (val.getSourceRelation() == Relation.R) {
-				rSet.add(val.getValue());
+				rCounts.computeIfPresent(val.getValue(), (k, oldValue) -> oldValue + 1);
+				rCounts.putIfAbsent(val.getValue(), 1);
 			} else if (val.getSourceRelation() == Relation.S) {
-				sSet.add(val.getValue());
+				sCounts.computeIfPresent(val.getValue(), (k, oldValue) -> oldValue + 1);
+				sCounts.putIfAbsent(val.getValue(), 1);
 			} else {
 				Integer c = val.getValue().getKey();
 				Integer a = val.getValue().getValue();
-				for (Pair<Integer, Integer> s : sSet) {
-					Integer b = s.getKey();
-					if (c == s.getValue() && rSet.contains(new Pair<>(a, b))) {
-						result.set(a + " " + b + " " + c);
-						context.write(NullWritable.get(), result);
+
+				for (Pair<Integer, Integer> sEntry : sCounts.keySet()) {
+					if (c != sEntry.getValue()) {
+						continue;
+					}
+					Integer b = sEntry.getKey();
+					for (int i = 0; i < sCounts.get(sEntry); ++i) {
+						Integer rCount = rCounts.get(new Pair<>(a, b));
+						if (rCount == null) {
+							break;
+						}
+						for (int j = 0; j < rCount; ++j) {
+							result.set(a + " " + b + " " + c);
+							context.write(NullWritable.get(), result);
+						}
 					}
 				}
 			}

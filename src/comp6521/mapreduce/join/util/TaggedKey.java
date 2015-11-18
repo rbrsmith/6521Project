@@ -79,11 +79,11 @@ public class TaggedKey implements Writable, WritableComparable<TaggedKey> {
 
 	@Override
 	public int compareTo(TaggedKey taggedKey) {
-		int compareValue = this.joinKey.compareTo(taggedKey.getJoinKey());
-		if (compareValue == 0) {
-			compareValue = this.tag.compareTo(taggedKey.getTag());
+		int joinKeyComparison = this.joinKey.compareTo(taggedKey.getJoinKey());
+		if (joinKeyComparison == 0) {
+			return this.tag.compareTo(taggedKey.getTag());
 		}
-		return compareValue;
+		return joinKeyComparison;
 	}
 
 	@Override
