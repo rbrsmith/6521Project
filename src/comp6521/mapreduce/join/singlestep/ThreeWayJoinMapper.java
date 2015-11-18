@@ -1,4 +1,4 @@
-package comp6521.mapreduce.join;
+package comp6521.mapreduce.join.singlestep;
 
 import java.io.IOException;
 import java.util.List;
@@ -12,15 +12,11 @@ import com.google.common.collect.Lists;
 
 import comp6521.mapreduce.join.util.HashedKey;
 import comp6521.mapreduce.join.util.Relation;
-import comp6521.mapreduce.join.util.SourcedElement;
+import comp6521.mapreduce.join.util.TaggedElement;
+import comp6521.mapreduce.join.util.TaggedKey;
 import javafx.util.Pair;
 
-/**
- * Map each line to its key, in R the key is the second input In S the key is
- * the first input
- *
- */
-public class ThreeWayJoinMapper extends Mapper<LongWritable, Text, HashedKey, SourcedElement> {
+public class ThreeWayJoinMapper extends Mapper<LongWritable, Text, TaggedKey, TaggedElement> {
 
 	private Splitter splitter;
 
@@ -43,14 +39,14 @@ public class ThreeWayJoinMapper extends Mapper<LongWritable, Text, HashedKey, So
 
 		for (int i = 0; i < ThreeWayJoin.REDUCER_GRID_SIDE_LENGTH; ++i) {
 			if (sourceRelation == Relation.R) {
-				context.write(new HashedKey(hashedFirst, hashedSecond, i),
-						new SourcedElement(sourceRelation, new Pair<Integer, Integer>(first, second)));
+				context.write(new TaggedKey(new HashedKey(hashedFirst, hashedSecond, i), sourceRelation),
+						new TaggedElement(sourceRelation, new Pair<Integer, Integer>(first, second)));
 			} else if (sourceRelation == Relation.S) {
-				context.write(new HashedKey(i, hashedFirst, hashedSecond),
-						new SourcedElement(sourceRelation, new Pair<Integer, Integer>(first, second)));
+				context.write(new TaggedKey(new HashedKey(i, hashedFirst, hashedSecond), sourceRelation),
+						new TaggedElement(sourceRelation, new Pair<Integer, Integer>(first, second)));
 			} else {
-				context.write(new HashedKey(hashedSecond, i, hashedFirst),
-						new SourcedElement(sourceRelation, new Pair<Integer, Integer>(first, second)));
+				context.write(new TaggedKey(new HashedKey(hashedSecond, i, hashedFirst), sourceRelation),
+						new TaggedElement(sourceRelation, new Pair<Integer, Integer>(first, second)));
 			}
 		}
 	}

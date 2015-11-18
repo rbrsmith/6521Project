@@ -1,4 +1,4 @@
-package comp6521.mapreduce.join;
+package comp6521.mapreduce.join.singlestep;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
@@ -8,8 +8,10 @@ import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 
-import comp6521.mapreduce.join.util.HashedKey;
-import comp6521.mapreduce.join.util.SourcedElement;
+import comp6521.mapreduce.join.TaggedJoiningGroupingComparator;
+import comp6521.mapreduce.join.TaggedJoiningPartitioner;
+import comp6521.mapreduce.join.util.TaggedElement;
+import comp6521.mapreduce.join.util.TaggedKey;
 
 public class ThreeWayJoin {
 	
@@ -25,11 +27,13 @@ public class ThreeWayJoin {
 		job.setSpeculativeExecution(false);
 
 		job.setMapperClass(ThreeWayJoinMapper.class);
+		job.setPartitionerClass(TaggedJoiningPartitioner.class);
+        job.setGroupingComparatorClass(TaggedJoiningGroupingComparator.class);
 		job.setReducerClass(ThreeWayJoinReducer.class);
-		job.setNumReduceTasks(REDUCER_GRID_SIDE_LENGTH);
+		job.setNumReduceTasks(REDUCER_COUNT);
 
-		job.setMapOutputKeyClass(HashedKey.class);
-		job.setMapOutputValueClass(SourcedElement.class);
+		job.setMapOutputKeyClass(TaggedKey.class);
+		job.setMapOutputValueClass(TaggedElement.class);
 		job.setOutputKeyClass(NullWritable.class);
 		job.setOutputValueClass(Text.class);
 	    

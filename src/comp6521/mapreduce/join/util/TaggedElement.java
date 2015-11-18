@@ -9,17 +9,17 @@ import org.apache.hadoop.io.Writable;
 import javafx.util.Pair;
 
 /**
- * Utility class to hold the source set and the actual value
+ * Utility class to hold the source relation and the actual value
  * of an integer element.
  */
-public class SourcedElement implements Writable, Comparable<SourcedElement> {
+public class TaggedElement implements Writable, Comparable<TaggedElement> {
 
 	private Relation sourceRelation;
 	private Pair<Integer, Integer> value;
 
-	public SourcedElement() {}
+	public TaggedElement() {}
 	
-	public SourcedElement(Relation source, Pair<Integer, Integer> value) {
+	public TaggedElement(Relation source, Pair<Integer, Integer> value) {
 		this.sourceRelation = source;
 		this.value = value;
 	}
@@ -51,7 +51,7 @@ public class SourcedElement implements Writable, Comparable<SourcedElement> {
 	}
 
 	@Override
-	public int compareTo(SourcedElement o) {
+	public int compareTo(TaggedElement o) {
 		int relationOrdering = sourceRelation.compareTo(o.sourceRelation);
 
 		if (relationOrdering == 0) {

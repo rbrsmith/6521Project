@@ -1,4 +1,4 @@
-package comp6521.mapreduce.join;
+package comp6521.mapreduce.join.singlestep;
 
 import java.io.IOException;
 import java.util.HashSet;
@@ -8,15 +8,15 @@ import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Reducer;
 
-import comp6521.mapreduce.join.util.HashedKey;
 import comp6521.mapreduce.join.util.Relation;
-import comp6521.mapreduce.join.util.SourcedElement;
+import comp6521.mapreduce.join.util.TaggedElement;
+import comp6521.mapreduce.join.util.TaggedKey;
 import javafx.util.Pair;
 
-public class ThreeWayJoinReducer extends Reducer<HashedKey, SourcedElement, NullWritable, Text> {
+public class ThreeWayJoinReducer extends Reducer<TaggedKey, TaggedElement, NullWritable, Text> {
 
 	@Override
-	public void reduce(HashedKey key, Iterable<SourcedElement> values,
+	public void reduce(TaggedKey key, Iterable<TaggedElement> values,
 			Context context) throws IOException, InterruptedException {
 		Text result = new Text();
 
@@ -26,7 +26,7 @@ public class ThreeWayJoinReducer extends Reducer<HashedKey, SourcedElement, Null
 		Set<Pair<Integer, Integer>> rSet = new HashSet<>();
 		Set<Pair<Integer, Integer>> sSet = new HashSet<>();
 		
-		for (SourcedElement val : values) {
+		for (TaggedElement val : values) {
 			if (val.getSourceRelation() == Relation.R) {
 				rSet.add(val.getValue());
 			} else if (val.getSourceRelation() == Relation.S) {
